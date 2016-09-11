@@ -1,0 +1,106 @@
+---
+title: "Coursera Assignment"
+author: "Gmatmarshall"
+date: "September 11, 2016"
+output: html_document
+---
+
+## Loading and preprocessing the data
+The following command uses R to download and unzip the data file and store the results in the variable activity.
+
+```{r, echo=TRUE}
+setwd("~/Coursera/Reproducible_Research")
+download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip","activity.zip",method="curl")
+unzip("activity.zip", "activity.csv")
+activity <- read.csv("~/Coursera/Reproducible_Research/activity.csv")
+```
+
+The next command reoves the NA elements from the dataset and store the new data in the variable activityn
+```{r, echo=TRUE}
+activityn<-activity[!is.na(activity$steps),]
+```
+
+## The mean total number of steps taken per day
+Now the total number of steps each day is computed and stored in the variable sumd.
+```{r, echo=TRUE}
+sumd<-with(activityn,tapply(steps,date,sum))
+```
+
+```{r, echo=TRUE}
+hist(sumd, main="Histogram of oringial data",xlab="steps")
+```
+
+The mean and median of the total number of steps taken per day can easily be computed.
+```{r, echo=TRUE}
+mean(sumd,na.rm=TRUE)
+median(sumd,na.rm= TRUE)
+```
+
+## The average daily activity pattern
+
+Using activityn variable (where the NAs have been removed) we compute the average across all days for particular
+intervals.
+
+```{r, echo=TRUE}
+avgd<- with(activityn,tapply(steps,interval,mean))
+plot(avgd~as.integer(names(avgd)),type='l', main = "Time series plot of steps", xlab="intervals")
+
+```
+
+The interval that contains the maximum is 
+```{r, echo=TRUE}
+avgd[avgd==max(avgd)]
+```
+We see that interval 835 contains the highest number of steps.
+
+## Imputing missing values
+
+The code below will count the number of NAs (done by coercing the TRUE values to 1 and FALSE values to 0)
+```{r, echo=TRUE}
+sum(is.na(activity$steps))
+```
+
+
+Replace all the NA values with the mean and store it in variable activity2
+```{r, echo=TRUE}
+activity2<-activity
+activity2$steps[is.na(activity$steps)]<-mean(activity$steps,na.rm=TRUE)
+```
+
+Note the histogram is the same, which means it might be possible that base R is handling the missing values for histogram by imputing the mean.
+
+```{r, echo=TRUE}
+sumd2<-with(activity2,tapply(steps,date,sum))
+hist(sumd2, main="Histogram of data with filled in missing values", xlab="interval")
+mean(sumd2)
+median(sumd2)
+```
+
+Note these values do not change much from the original values. It will affect the standard deviation.
+
+## Differences in activity patterns between weekdays and weekends?
+
+The code below converts the dates in to the form of factors (weekdays and weekends)
+```{r,echo=TRUE}
+activity3<- activity2
+ activity3$date<- as.Date(activity3$date)
+ activity3$date<-weekdays(activity3$date)
+activity3$date<-as.factor(activity3$date)
+activity4<-activity3
+levels(activity4$date)
+levels(activity4$date) <- c("weekday","weekday","weekend","weekend","weekday","weekday","weekday")
+```
+
+```{r,echo=TRUE}
+wkday<-activity4[activity4$date=="weekday",]
+wkend<-activity4[activity4$date=="weekend",]
+
+meanwkday<-with(wkday,tapply(steps,interval,mean))
+meanwkend<-with(wkend,tapply(steps,interval,mean))
+
+par(mfrow=c(2,1))
+plot(meanwkend~as.integer(names(meanwkend)),type='l', main="Weekend Steps",xlab="steps")
+plot(meanwkday,type='l', main="Weekday Steps", xlab="steps",ylab="average")
+```
+
+We note that there is more activity on the weekend after the 1000th interval.
